@@ -52,6 +52,82 @@ static GLubyte cube_indices[] = {
   1, 4, 5
 }; /* size == 36 */
 
+
+static const int xz_grid_lines = 101; /* num lines per dimension; square grid */
+static const int xz_grid_vertex_count = (xz_grid_lines * 2 * 2);
+static const int xz_grid_vertex_component_count = xz_grid_vertex_count * 3;
+static GLfloat xzgrid[1212]; 
+
+/* generate_xz_grid - generates a vertex array which can be used to render
+ * a grid in the world space x-z plane. The grid is centered about it's origin.
+ *
+ * @vertex_array - buffer to store generated vertices.
+ * @ox,oy,oz - position vector to origin of the grid.
+ * @d - distance between grid lines (unit: meters).
+ * @nx - num lines perpendicular to x-axis in grid.
+ * @nz - num lines perpendicular to z-axis in grid.
+ *
+ * note - the @vertex_array MUST be large enough to store all the generated
+ * vertices or a seg fault will occur. The number of generated vertices can
+ * be calculated as:
+ *    
+ *    num_vertices = (nx + ny) * 2 * 3
+ *
+ * why? nx + ny = num lines in grid, then have 2 points per line and 3 vertices
+ * per point.
+ *
+ * note - nx and nz should be odd values to allow the grid to be evenly spaced
+ * about the origin; the odd, extra line in each dimension is the center line
+ * in that dimension. This approach is taken to allow the center line to be
+ * rendered as the axes of the grid and have the grid evenly spaced about the
+ * axes. If nx or nz is even, they are made odd by subtracting 1.
+ */
+void
+generate_xz_grid(GLfloat *vertex_array, 
+                 float ox, 
+                 float oy, 
+                 float oz, 
+                 float d_m, 
+                 int nx, 
+                 int nz)
+{
+  assert(vertex_array != NULL);
+
+  int nhx, nhz, v = 0;
+
+  if(nx % 2 == 0)
+    nx--;
+  if(nz % 2 == 0)
+    nz--;
+
+  nhx = (nx - 1) / 2;
+  nhz = (nz - 1) / 2;
+
+  /* generate the lines perpendicular to the x-axis */
+  for(int i = -nhx; i < nhx; ++i)
+  {
+    vertex_array[v++] = ox + (d_m * i);
+    vertex_array[v++] = oy + 0.f;
+    vertex_array[v++] = oz + (-nhz);
+
+    vertex_array[v++] = ox + (d_m * i);
+    vertex_array[v++] = oy + 0.f;
+    vertex_array[v++] = oz + nhz;
+  }
+
+  /* generate the lines perpendicular to the z-axis */
+  for(int i = -nhz; i < nhz; ++i)
+  {
+    vertex_array[v++] = ox + (-nhx);
+    vertex_array[v++] = oy + 0.f;
+    vertex_array[v++] = oz + d_m * i;
+
+    vertex_array[v++] = ox + nhx;
+    vertex_array[v++] = oy + 0.f;
+    vertex_array[v++] = oz + (d_m * i);
+  }
+}
+
 static void
 init()
 {
@@ -121,12 +197,11 @@ run()
             "real-time clock resolution = %ld nanoseconds\n", 
             clock_resolution_ns(&real_clock));
 
+
+  generate_xz_grid(xzgrid, 0.f, -10.f, 0.f, 1.f, xz_grid_lines, xz_grid_lines);
+
   glEnableClientState(GL_VERTEX_ARRAY);
-  glEnableClientState(GL_COLOR_ARRAY);
-
-  glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
-  glColorPointer(3, GL_FLOAT, 0, cube_colors);
-
+      
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
   glEnable(GL_CULL_FACE);
@@ -166,11 +241,29 @@ run()
     if(redraw)
     {
       glClear(GL_COLOR_BUFFER_BIT);
+
+      /* set camera position - i.e. view matrix */
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
-      glTranslatef(0.0f, -2.0f, -10.0f);
+      glTranslatef(0.0f, 5.0f, -20.0f);
+      glRotatef(30.f, 1.0f, 0.0f, 0.0f);
       glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
+
+      /* draw grid */
+      glVertexPointer(3, GL_FLOAT, 0, xzgrid);
+      glColor3f(1.f, 0.f, 0.f);
+      glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
+
+      /* draw cube */
+      glPushMatrix();
+      glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
+      glEnableClientState(GL_COLOR_ARRAY);
+      glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
+      glColorPointer(3, GL_FLOAT, 0, cube_colors);
       glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, cube_indices);
+      glDisableClientState(GL_COLOR_ARRAY);
+      glPopMatrix();
+
       SDL_GL_SwapWindow(window);
       redraw = false;
     }
