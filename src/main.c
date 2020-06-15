@@ -5,6 +5,8 @@
 #include <assert.h>
 #include "util/log.h"
 #include "util/clock.h"
+#include "ship.h"
+#include "ship_cam.h"
 
 #define SCREEN_WIDTH_PX 1000
 #define SCREEN_HEIGHT_PX 1000
@@ -14,6 +16,8 @@
 
 static SDL_GLContext glcontext;
 static SDL_Window *window;
+
+/**** CUBE MODEL *************************************************************/
 
 static GLfloat cube_vertices[] = {
   -1.0f, -1.0f,  1.0f,  
@@ -52,6 +56,46 @@ static GLubyte cube_indices[] = {
   1, 4, 5
 }; /* size == 36 */
 
+/**** SHIP MODEL *************************************************************/
+
+static GLfloat ship_vertices[] = {
+  -0.5f,  0.0f, -1.0f,
+  -1.0f,  0.0f,  1.0f,
+   1.0f,  0.0f, -1.0f,
+   0.5f,  0.0f, -1.0f,
+  -0.75f, 0.3f,  0.5f,
+   0.75f, 0.3f,  0.5f,
+   0.75f,-0.3f,  0.5f,
+  -0.75f,-0.3f,  0.5f
+}; /* size = 8 */
+
+static GLfloat ship_colors[] = {
+  1.0f, 1.0f, 1.0f,
+  1.0f, 0.0f, 0.0f,
+  1.0f, 0.0f, 0.0f,
+  1.0f, 1.0f, 1.0f,
+  1.0f, 0.0f, 0.0f,
+  1.0f, 0.0f, 0.0f,
+  1.0f, 0.0f, 0.0f,
+  1.0f, 0.0f, 0.0f
+}; /* size = 8 */
+
+static GLubyte ship_indices[] = {
+  0, 1, 4,
+  4, 1, 5,
+  1, 2, 5,
+  2, 3, 5,
+  0, 4, 3,
+  4, 5, 3,
+  0, 1, 7,
+  1, 6, 7,
+  1, 2, 6,
+  0, 7, 3,
+  3, 7, 6,
+  2, 3, 6
+}; /* size = 36 */
+
+/*****************************************************************************/
 
 static const int xz_grid_lines = 101; /* num lines per dimension; square grid */
 static const int xz_grid_vertex_count = (xz_grid_lines * 2 * 2);
@@ -198,13 +242,20 @@ run()
             clock_resolution_ns(&real_clock));
 
 
-  generate_xz_grid(xzgrid, 0.f, -10.f, 0.f, 1.f, xz_grid_lines, xz_grid_lines);
+  generate_xz_grid(xzgrid, 0.f, 0.f, 0.f, 1.f, xz_grid_lines, xz_grid_lines);
 
   glEnableClientState(GL_VERTEX_ARRAY);
       
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
   glEnable(GL_CULL_FACE);
+
+  struct ship nautilus;
+  memset((void *)&nautilus, 0, sizeof(struct ship));
+
+  struct ship_cam cam;
+  cam.target = &nautilus;
+  cam.seperation_m = 20.f;
 
   float angle_deg = 0.f;
   float angle_vel_degPs = 10.f;
@@ -224,6 +275,58 @@ run()
       {
       case SDL_QUIT:
         is_done = true;
+      case SDL_KEYDOWN:
+        if(event.key.repeat != 0)
+        {
+          break;
+        }
+        if(event.key.keysym.sym == SDLK_w)
+        {
+          nautilus.is_boosting = true;
+        }
+        else if(event.key.keysym.sym == SDLK_UP)
+        {
+          ship_start_pitch(&nautilus, ROTATE_CW);
+        }
+        else if(event.key.keysym.sym == SDLK_DOWN)
+        {
+          ship_start_pitch(&nautilus, ROTATE_CCW);
+        }
+        else if(event.key.keysym.sym == SDLK_LEFT)
+        {
+          ship_start_roll(&nautilus, ROTATE_CCW);
+        }
+        else if(event.key.keysym.sym == SDLK_RIGHT)
+        {
+          ship_start_roll(&nautilus, ROTATE_CW);
+        }
+        break;
+      case SDL_KEYUP:
+        if(event.key.repeat != 0)
+        {
+          break;
+        }
+        if(event.key.keysym.sym == SDLK_w)
+        {
+          nautilus.is_boosting = false;
+        }
+        else if(event.key.keysym.sym == SDLK_UP)
+        {
+          ship_stop_pitch(&nautilus, ROTATE_CW);
+        }
+        else if(event.key.keysym.sym == SDLK_DOWN)
+        {
+          ship_stop_pitch(&nautilus, ROTATE_CCW);
+        }
+        else if(event.key.keysym.sym == SDLK_LEFT)
+        {
+          ship_stop_roll(&nautilus, ROTATE_CCW);
+        }
+        else if(event.key.keysym.sym == SDLK_RIGHT)
+        {
+          ship_stop_roll(&nautilus, ROTATE_CW);
+        }
+        break;
       }
     }
 
@@ -232,6 +335,9 @@ run()
     while(time_s > next_update_s && update_count < MAX_UPDATES_PER_FRAME)
     {
       angle_deg += angle_vel_degPs * UPDATE_DELTA_S;
+
+      ship_update(&nautilus, UPDATE_DELTA_S);
+      ship_cam_update(&cam, UPDATE_DELTA_S);
 
       next_update_s += UPDATE_DELTA_S;
       ++update_count;
@@ -243,25 +349,62 @@ run()
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* set camera position - i.e. view matrix */
+      //glMatrixMode(GL_MODELVIEW);
+      //glLoadIdentity();
+      //glTranslatef(0.0f, 5.0f, -20.0f);
+      //glRotatef(30.f, 1.0f, 0.0f, 0.0f);
+      //glRotatef(angle_deg, 1.0f, 0.0f, 0.0f);
+      
       glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      glTranslatef(0.0f, 5.0f, -20.0f);
-      glRotatef(30.f, 1.0f, 0.0f, 0.0f);
-      glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
+      glLoadMatrixf(flatten44fm(&cam.view)); 
 
-      /* draw grid */
+      glDisableClientState(GL_COLOR_ARRAY);
+
+      /* bottom grid */
       glVertexPointer(3, GL_FLOAT, 0, xzgrid);
       glColor3f(1.f, 0.f, 0.f);
+      glPushMatrix();
+      glTranslatef(0.0f, -50.f, 0.f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
+      glPopMatrix();
+
+      /* top grid */
+      glPushMatrix();
+      glTranslatef(0.0f, 50.f, 0.f);
+      glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
+      glPopMatrix();
+
+      /* back grid (+)z */
+      glPushMatrix();
+      glTranslatef(0.f, 0.f, 50.f);
+      glRotatef(90.f, 1.0f, 0.0f, 0.0f);
+      glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
+      glPopMatrix();
+
+      /* front grid (-)z */
+      glPushMatrix();
+      glTranslatef(0.f, 0.f, -50.f);
+      glRotatef(90.f, 1.0f, 0.0f, 0.0f);
+      glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
+      glPopMatrix();
+
+      glEnableClientState(GL_COLOR_ARRAY);
 
       /* draw cube */
       glPushMatrix();
       glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
-      glEnableClientState(GL_COLOR_ARRAY);
       glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
       glColorPointer(3, GL_FLOAT, 0, cube_colors);
       glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, cube_indices);
-      glDisableClientState(GL_COLOR_ARRAY);
+      glPopMatrix();
+
+      /* draw ship */
+      glPushMatrix();
+      glLoadMatrixf(flatten44fm(&nautilus.mw)); 
+      glEnableClientState(GL_COLOR_ARRAY);
+      glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
+      glColorPointer(3, GL_FLOAT, 0, ship_colors);
+      glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, ship_indices);
       glPopMatrix();
 
       SDL_GL_SwapWindow(window);
