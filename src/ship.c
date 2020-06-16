@@ -8,10 +8,20 @@ const float ship_max_roll_vel_degPs = 60.f;
 const float ship_pitch_acc_degPs2 = 10.f;
 const float ship_roll_acc_degPs2 = 10.f;
 
+#include <string.h>
+#include <stdio.h>
+
 #include "math/matrix44f.h"
 #include "math/vector4f.h"
 
 #include "ship.h"
+
+void
+ship_init(struct ship *sh)
+{
+  memset((void *)sh, 0, sizeof(struct ship));
+  sh->pos_W_m.w = 1.f;
+}
 
 void
 ship_update(struct ship *sh, float delta_s)
@@ -26,12 +36,13 @@ ship_update(struct ship *sh, float delta_s)
   struct matrix44f r, p;
   rotation_x44fm(sh->pitch_deg, &p);
   rotation_z44fm(sh->roll_deg, &r);
+  printf("roll_deg=%f\n", sh->roll_deg);
   concatenate44fm(&r, &p, &(sh->mw));
 
   /* if boosting integrate linear velocity */
   if(sh->is_boosting)
   {
-    struct vector4f dv = {0.f, 0.f, -1.f, 1.f}; /* dv = delta velocity */
+    struct vector4f dv = {0.f, 0.f, -1.f, 0.f}; /* dv = delta velocity */
     dv = multiply44fm(&(sh->mw), dv);
     dv = scale4fv(dv, ship_acc_mPs2 * delta_s);
     sh->vel_W_mPs = add4fv(sh->vel_W_mPs, dv);
@@ -44,6 +55,10 @@ ship_update(struct ship *sh, float delta_s)
   sh->mw.m[3][0] = sh->pos_W_m.x;
   sh->mw.m[3][1] = sh->pos_W_m.y;
   sh->mw.m[3][2] = sh->pos_W_m.z;
+  
+  printf("ship.x=%f\n", sh->pos_W_m.x);
+  printf("ship.y=%f\n", sh->pos_W_m.y);
+  printf("ship.z=%f\n", sh->pos_W_m.z);
 }
 
 void

@@ -273,9 +273,9 @@ FUNCTION_NAME(concatenate)(struct MATRIX_NAME *a,
 {
   assert(a != NULL && b != NULL && out != NULL);
   memset((void *)out, M0, sizeof(struct MATRIX_NAME));
-  for(int i = 0; i < 3; ++i)
-    for(int j = 0; j < 3; ++j)
-      for(int n = 0; n < 3; ++n)
+  for(int i = 0; i <= 3; ++i)
+    for(int j = 0; j <= 3; ++j)
+      for(int n = 0; n <= 3; ++n)
         out->m[i][j] += a->m[n][j] * b->m[i][n];
 }
 

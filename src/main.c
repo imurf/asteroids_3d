@@ -61,7 +61,7 @@ static GLubyte cube_indices[] = {
 static GLfloat ship_vertices[] = {
   -0.5f,  0.0f, -1.0f,
   -1.0f,  0.0f,  1.0f,
-   1.0f,  0.0f, -1.0f,
+   1.0f,  0.0f,  1.0f,
    0.5f,  0.0f, -1.0f,
   -0.75f, 0.3f,  0.5f,
    0.75f, 0.3f,  0.5f,
@@ -70,23 +70,23 @@ static GLfloat ship_vertices[] = {
 }; /* size = 8 */
 
 static GLfloat ship_colors[] = {
-  1.0f, 1.0f, 1.0f,
+  0.0f, 1.0f, 0.0f,
+  1.0f, 1.0f, 0.0f,
+  1.0f, 1.0f, 0.0f,
+  0.0f, 1.0f, 0.0f,
   1.0f, 0.0f, 0.0f,
   1.0f, 0.0f, 0.0f,
-  1.0f, 1.0f, 1.0f,
-  1.0f, 0.0f, 0.0f,
-  1.0f, 0.0f, 0.0f,
-  1.0f, 0.0f, 0.0f,
-  1.0f, 0.0f, 0.0f
+  0.0f, 0.0f, 1.0f,
+  0.0f, 0.0f, 1.0f
 }; /* size = 8 */
 
 static GLubyte ship_indices[] = {
-  0, 1, 4,
-  4, 1, 5,
-  1, 2, 5,
-  2, 3, 5,
-  0, 4, 3,
-  4, 5, 3,
+  0, 4, 1,
+  4, 5, 1,
+  1, 5, 2,
+  2, 5, 3,
+  0, 3, 4,
+  4, 3, 5,
   0, 1, 7,
   1, 6, 7,
   1, 2, 6,
@@ -94,6 +94,73 @@ static GLubyte ship_indices[] = {
   3, 7, 6,
   2, 3, 6
 }; /* size = 36 */
+
+static GLubyte ship_bottom_indices[] = {
+  0, 7, 1,
+  1, 7, 6,
+  1, 6, 2,
+  0, 3, 7,
+  3, 6, 7,
+  2, 6, 3,
+};
+
+static GLubyte ship_top_indices[] = {
+  0, 1, 4,
+  4, 1, 5,
+  1, 2, 5,
+  2, 3, 5,
+  0, 4, 3,
+  4, 5, 3
+};
+
+static GLubyte ship_wireframe_indices[] = {
+  0, 1,
+  1, 2,
+  2, 3,
+  0, 3,
+  0, 4,
+  1, 4,
+  2, 5,
+  4, 5,
+  3, 5,
+  0, 7,
+  1, 7,
+  2, 6,
+  6, 7,
+  6, 3
+};
+
+/*** WORLD AXES **************************************************************/
+
+static GLfloat axis_vertices[] = {
+   0.f  , 0.f  , 0.f  ,
+   200.f, 0.f  , 0.f  ,   /* (+)x-axis */
+   0.f  , 0.f  , 0.f  ,
+  -200.f, 0.f  , 0.f  ,   /* (-)x-axis */
+   0.f  , 0.f  , 0.f  ,
+   0.f  , 200.f, 0.f  ,   /* (+)y-axis */
+   0.f  , 0.f  , 0.f  ,
+   0.f  ,-200.f, 0.f  ,   /* (-)y-axis */
+   0.f  , 0.f  , 0.f  ,
+   0.f  , 0.f  , 200.f,   /* (+)z-axis */
+   0.f  , 0.f  , 0.f  ,
+   0.f  , 0.f  ,-200.f    /* (-)z-axis */
+}; /* size = 36 */
+
+static GLfloat axis_colors[] = {
+  1.0f, 0.0f, 0.0f,
+  1.0f, 0.0f, 0.0f,       /* (+)x-axis */
+  1.0f, 0.5f, 0.0f,
+  1.0f, 0.5f, 0.0f,       /* (-)x-axis */
+  0.0f, 1.0f, 0.0f,
+  0.0f, 1.0f, 0.0f,       /* (+)y-axis */
+  1.0f, 1.0f, 0.0f,
+  1.0f, 1.0f, 0.0f,       /* (-)y-axis */
+  0.0f, 0.0f, 1.0f,
+  0.0f, 0.0f, 1.0f,       /* (+)z-axis */
+  0.0f, 1.0f, 1.0f,
+  0.0f, 1.0f, 1.0f,       /* (-)z-axis */
+}; /* size = 12 */
 
 /*****************************************************************************/
 
@@ -251,14 +318,26 @@ run()
   glEnable(GL_CULL_FACE);
 
   struct ship nautilus;
-  memset((void *)&nautilus, 0, sizeof(struct ship));
+  ship_init(&nautilus);
 
   struct ship_cam cam;
   cam.target = &nautilus;
-  cam.seperation_m = 20.f;
+  cam.seperation_m = 10.f;
 
   float angle_deg = 0.f;
   float angle_vel_degPs = 10.f;
+
+  int cam_yaw_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  float cam_yaw_deg = 0.f;
+  float cam_yaw_vel_degPs = 20.f;
+
+  int cam_pitch_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  float cam_pitch_deg = 0.f;
+  float cam_pitch_vel_degPs = 20.f;
+
+  int cam_roll_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  float cam_roll_deg = 0.f;
+  float cam_roll_vel_degPs = 20.f;
 
   double next_update_s = UPDATE_DELTA_S;
   bool redraw = true;
@@ -300,6 +379,34 @@ run()
         {
           ship_start_roll(&nautilus, ROTATE_CW);
         }
+
+        else if(event.key.keysym.sym == SDLK_l)
+        {
+          cam_yaw_dir = 1; 
+        }
+        else if(event.key.keysym.sym == SDLK_j)
+        {
+          cam_yaw_dir = -1; 
+        }
+
+        else if(event.key.keysym.sym == SDLK_i)
+        {
+          cam_pitch_dir = 1; 
+        }
+        else if(event.key.keysym.sym == SDLK_k)
+        {
+          cam_pitch_dir = -1; 
+        }
+
+        else if(event.key.keysym.sym == SDLK_o)
+        {
+          cam_roll_dir = 1; 
+        }
+        else if(event.key.keysym.sym == SDLK_u)
+        {
+          cam_roll_dir = -1; 
+        }
+
         break;
       case SDL_KEYUP:
         if(event.key.repeat != 0)
@@ -326,6 +433,34 @@ run()
         {
           ship_stop_roll(&nautilus, ROTATE_CW);
         }
+
+        else if(event.key.keysym.sym == SDLK_l)
+        {
+          cam_yaw_dir = 0; 
+        }
+        else if(event.key.keysym.sym == SDLK_j)
+        {
+          cam_yaw_dir = 0; 
+        }
+
+        else if(event.key.keysym.sym == SDLK_i)
+        {
+          cam_pitch_dir = 0; 
+        }
+        else if(event.key.keysym.sym == SDLK_k)
+        {
+          cam_pitch_dir = 0; 
+        }
+
+        else if(event.key.keysym.sym == SDLK_o)
+        {
+          cam_roll_dir = 0; 
+        }
+        else if(event.key.keysym.sym == SDLK_u)
+        {
+          cam_roll_dir = 0; 
+        }
+
         break;
       }
     }
@@ -338,6 +473,10 @@ run()
 
       ship_update(&nautilus, UPDATE_DELTA_S);
       ship_cam_update(&cam, UPDATE_DELTA_S);
+
+      cam_yaw_deg += cam_yaw_vel_degPs * cam_yaw_dir * UPDATE_DELTA_S;
+      cam_pitch_deg += cam_pitch_vel_degPs * cam_pitch_dir * UPDATE_DELTA_S;
+      cam_roll_deg += cam_roll_vel_degPs * cam_roll_dir * UPDATE_DELTA_S;
 
       next_update_s += UPDATE_DELTA_S;
       ++update_count;
@@ -355,14 +494,42 @@ run()
       //glRotatef(30.f, 1.0f, 0.0f, 0.0f);
       //glRotatef(angle_deg, 1.0f, 0.0f, 0.0f);
       
+      //
+      // the model appears to be inverted if I use my own view matrix, if
+      // using the opengl matrix math to build the view it is not inverted.
+      //
+      // it is both the winding order and the ship direction that is inverted,
+      // it is asthough the ship is scaled by -1.0 on the z-axis.
+      //
+      // With my view the ship points down -z but the winding order is inside
+      // out, with opengl view the ship points up +z and the winding order is
+      // correct.
+      //
+      // NOPE! i was wrong, in both cases the ship points up +z, but with my
+      // view the winding order is inside out.
+      //
+      // NOPE! wrong again, they are actually the same. IT IS VERY HARD TO TELL!
+      //
+      // need a better testing setup/arrangement.
+      //
+      
+      /* set the view matrix */
       glMatrixMode(GL_MODELVIEW);
-      glLoadMatrixf(flatten44fm(&cam.view)); 
+      glLoadIdentity();
+      glTranslatef(0.0f, 0.0f, -10.0f);
+      glRotatef(cam_yaw_deg, 0.0f, 1.0f, 0.0f);
+      glRotatef(cam_pitch_deg, 1.0f, 0.0f, 0.0f);
+      glRotatef(cam_roll_deg, 0.0f, 0.0f, 1.0f);
+      //glRotatef(70.f, 0.0f, 1.0f, 0.0f);
+      //glLoadMatrixf(flatten44fm(&cam.view));
 
+      //glEnableClientState(GL_COLOR_ARRAY);
+      
       glDisableClientState(GL_COLOR_ARRAY);
 
       /* bottom grid */
       glVertexPointer(3, GL_FLOAT, 0, xzgrid);
-      glColor3f(1.f, 0.f, 0.f);
+      glColor3f(0.5f, 0.5f, 0.5f);
       glPushMatrix();
       glTranslatef(0.0f, -50.f, 0.f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
@@ -390,21 +557,39 @@ run()
 
       glEnableClientState(GL_COLOR_ARRAY);
 
+      /* draw world space axes */
+      glVertexPointer(3, GL_FLOAT, 0, axis_vertices);
+      glColorPointer(3, GL_FLOAT, 0, axis_colors);
+      glDrawArrays(GL_LINES, 0, 12);
+
       /* draw cube */
-      glPushMatrix();
-      glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
-      glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
-      glColorPointer(3, GL_FLOAT, 0, cube_colors);
-      glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, cube_indices);
-      glPopMatrix();
+      //glPushMatrix();
+      //glRotatef(angle_deg, 0.0f, 1.0f, 0.0f);
+      //glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
+      //glColorPointer(3, GL_FLOAT, 0, cube_colors);
+      //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, cube_indices);
+      //glPopMatrix();
 
       /* draw ship */
       glPushMatrix();
-      glLoadMatrixf(flatten44fm(&nautilus.mw)); 
-      glEnableClientState(GL_COLOR_ARRAY);
+      glMultMatrixf(flatten44fm(&nautilus.mw)); 
+      //glTranslatef(0.f, 0.f, -50.f);
+      //glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
+      //glColorPointer(3, GL_FLOAT, 0, ship_colors);
+      //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, ship_indices);
       glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
-      glColorPointer(3, GL_FLOAT, 0, ship_colors);
-      glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, ship_indices);
+      glDisableClientState(GL_COLOR_ARRAY);
+      glPolygonMode(GL_FRONT, GL_FILL);
+      glColor3f(1.f, 0.f, 0.5f);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_top_indices);
+      glColor3f(0.f, 1.f, 1.f);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_bottom_indices);
+      glPolygonMode(GL_FRONT, GL_LINE);
+      glColor3f(1.f, 1.f, 1.0f);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_top_indices);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_bottom_indices);
+      //glColor3f(1.f, 1.f, 1.f);
+      //glDrawElements(GL_LINES, 28, GL_UNSIGNED_BYTE, ship_wireframe_indices);
       glPopMatrix();
 
       SDL_GL_SwapWindow(window);

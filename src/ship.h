@@ -26,6 +26,9 @@ struct ship
 };
 
 void
+ship_init(struct ship *sh);
+
+void
 ship_update(struct ship *sh, float delta_s);
 
 void
