@@ -84,15 +84,15 @@ FUNCTION_NAME(transpose)(struct MATRIX_NAME *out)
 }
 
 struct MATRIX_NAME *
-FUNCTION_NAME(transform)(MATRIX_TYPE n_x,
-                         MATRIX_TYPE n_y,
-                         MATRIX_TYPE n_z,
-                         MATRIX_TYPE angle_n_deg,
-                         MATRIX_TYPE t_x,
-                         MATRIX_TYPE t_y,
-                         MATRIX_TYPE t_z,
-                         MATRIX_TYPE scale,
-                         struct MATRIX_NAME *out)
+FUNCTION_NAME(transformTRS)(MATRIX_TYPE n_x,
+                            MATRIX_TYPE n_y,
+                            MATRIX_TYPE n_z,
+                            MATRIX_TYPE angle_n_deg,
+                            MATRIX_TYPE t_x,
+                            MATRIX_TYPE t_y,
+                            MATRIX_TYPE t_z,
+                            MATRIX_TYPE scale,
+                            struct MATRIX_NAME *out)
 {
   assert(out != NULL);
   angle_n_deg = DEG_TO_RAD(angle_n_deg);
@@ -110,10 +110,6 @@ FUNCTION_NAME(transform)(MATRIX_TYPE n_x,
               sz = s * n_z;
 #define sf scale
   *out = (struct MATRIX_NAME){
-    //{{(sf*(c + a*x2 )), (sf*(a*xy - sz)), (sf*(a*xz + sy)), (t_x)},
-    // {(sf*(a*xy + sz)), (sf*(c + a*y2 )), (sf*(a*yz - sx)), (t_y)},
-    // {(sf*(a*xz - sy)), (sf*(a*yz + sx)), (sf*(c + a*z2 )), (t_z)},
-    // {(M0            ), (M0            ), (M0            ), (M1)}}
     {{(sf*(c + a*x2 )), (sf*(a*xy + sz)), (sf*(a*xz - sy)), (M0)},
      {(sf*(a*xy - sz)), (sf*(c + a*y2 )), (sf*(a*yz + sx)), (M0)},
      {(sf*(a*xz + sy)), (sf*(a*yz - sx)), (sf*(c + a*z2 )), (M0)},
@@ -134,10 +130,6 @@ FUNCTION_NAME(rotation_x)(MATRIX_TYPE angle_x_deg, struct MATRIX_NAME *out)
   MATRIX_TYPE c = cos(angle_x_rad), 
               s = sin(angle_x_rad);
   *out = (struct MATRIX_NAME){
-    //{{M1, M0, M0, M0},
-    // {M0, c , -s, M0},
-    // {M0, s , c , M0},
-    // {M0, M0, M0, M1}}
     {{M1, M0, M0, M0},
      {M0, c , s , M0},
      {M0, -s, c , M0},
@@ -159,10 +151,6 @@ FUNCTION_NAME(rotation_y)(MATRIX_TYPE angle_y_deg, struct MATRIX_NAME *out)
   MATRIX_TYPE c = cos(angle_y_rad), 
               s = sin(angle_y_rad);
   *out = (struct MATRIX_NAME){
-    //{{c , M0, s , M0},
-    // {M0, M1, M0, M0},
-    // {-s, M0, c , M0},
-    // {M0, M0, M0, M1}}
     {{c , M0, -s, M0},
      {M0, M1, M0, M0},
      {s , M0, c , M0},
@@ -184,10 +172,6 @@ FUNCTION_NAME(rotation_z)(MATRIX_TYPE angle_z_deg, struct MATRIX_NAME *out)
   MATRIX_TYPE c = cos(angle_z_rad), 
               s = sin(angle_z_rad);
   *out = (struct MATRIX_NAME){
-    //{{c , -s, M0, M0},
-    // {s , c , M0, M0},
-    // {M0, M0, M1, M0},
-    // {M0, M0, M0, M1}}
     {{c , s , M0, M0},
      {-s, c , M0, M0},
      {M0, M0, M1, M0},
@@ -223,10 +207,6 @@ FUNCTION_NAME(rotation_n)(MATRIX_TYPE angle_n_deg,
               sy = s * n_y,
               sz = s * n_z;
   *out = (struct MATRIX_NAME){
-    //{{(c + a*x2 ), (a*xy - sz), (a*xz + sy), (M0)},
-    // {(a*xy + sz), (c + a*y2 ), (a*yz - sx), (M0)},
-    // {(a*xz - sy), (a*yz + sx), (c + a*z2 ), (M0)},
-    // {(M0       ) ,(M0       ), (M0       ), (M1)}}
     {{(c + a*x2 ), (a*xy + sz), (a*xz - sy), (M0)},
      {(a*xy - sz), (c + a*y2 ), (a*yz + sx), (M0)},
      {(a*xz + sy), (a*yz - sx), (c + a*z2 ), (M0)},

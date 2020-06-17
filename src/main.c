@@ -516,12 +516,12 @@ run()
       /* set the view matrix */
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
-      glTranslatef(0.0f, 0.0f, -10.0f);
-      glRotatef(cam_yaw_deg, 0.0f, 1.0f, 0.0f);
-      glRotatef(cam_pitch_deg, 1.0f, 0.0f, 0.0f);
-      glRotatef(cam_roll_deg, 0.0f, 0.0f, 1.0f);
+      //glTranslatef(0.0f, 0.0f, -10.0f);
+      //glRotatef(cam_yaw_deg, 0.0f, 1.0f, 0.0f);
+      //glRotatef(cam_pitch_deg, 1.0f, 0.0f, 0.0f);
+      //glRotatef(cam_roll_deg, 0.0f, 0.0f, 1.0f);
       //glRotatef(70.f, 0.0f, 1.0f, 0.0f);
-      //glLoadMatrixf(flatten44fm(&cam.view));
+      glLoadMatrixf(flatten44fm(&cam.view));
 
       //glEnableClientState(GL_COLOR_ARRAY);
       

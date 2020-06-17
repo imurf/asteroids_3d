@@ -132,7 +132,12 @@ FUNCTION_NAME(identity)(struct MATRIX_NAME *out);
 struct MATRIX_NAME *
 FUNCTION_NAME(transpose)(struct MATRIX_NAME *out);
 
-/* transform - builds matrix 'out' into a general affine transformation matrix.
+/* TODO: consider removing this function, seems pointless to have a routine
+ * that performs a specific order of transformations unless this order is
+ * used often and can be optimised. So far not using it.
+ *
+ * transformTRS - builds matrix 'out' into a general affine transformation 
+ * matrix.
  *
  * @n_x, n_y, n_z - components of vector 'n' to rotate around (CCW rotation).
  * @angle_n_deg   - angle in degrees to rotate about vector 'n'.
@@ -142,17 +147,32 @@ FUNCTION_NAME(transpose)(struct MATRIX_NAME *out);
  * returns - matrix 'out'.
  *
  * errors - asserts(0) if out == NULL.
+ *
+ * The constructed matrix is equivilent to the matrix concatenation of the
+ * order:
+ *    (T)(R)(S)
+ * where:
+ *    T = translation matrix; translates by vector {t_x, t_y, t_z}
+ *    R = rotation matrix; rotates about direction {n_x, n_y, n_z}
+ *    S = scale matrix; scales by factor 'scale'
+ *
+ * i.e. when used with column vectors, you get the product:
+ *    (T)(R)(S)(v)
+ * where:
+ *    v = some column vector
+ *
+ * i.e. scale is applied first, then the rotation and then the translation.
  */
 struct MATRIX_NAME *
-FUNCTION_NAME(transform)(MATRIX_TYPE n_x,
-                         MATRIX_TYPE n_y,
-                         MATRIX_TYPE n_z,
-                         MATRIX_TYPE angle_n_deg,
-                         MATRIX_TYPE t_x,
-                         MATRIX_TYPE t_y,
-                         MATRIX_TYPE t_z,
-                         MATRIX_TYPE scale,
-                         struct MATRIX_NAME *out);
+FUNCTION_NAME(transformTRS)(MATRIX_TYPE n_x,
+                            MATRIX_TYPE n_y,
+                            MATRIX_TYPE n_z,
+                            MATRIX_TYPE angle_n_deg,
+                            MATRIX_TYPE t_x,
+                            MATRIX_TYPE t_y,
+                            MATRIX_TYPE t_z,
+                            MATRIX_TYPE scale,
+                            struct MATRIX_NAME *out);
 
 /* rotation_x - build matrix 'out' into a pure rotation matrix which rotates
  *  about the x-axis.
