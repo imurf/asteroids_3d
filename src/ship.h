@@ -43,9 +43,9 @@ struct ship
   /* movement flags:
        boosting - (-1)=decelerating, 0=no boost, (+1)=accelerating
        pitching/rolling -  0=no rotation, 1=CCW, 2=CW */
-  uint8_t boosting;
-  uint8_t pitching;
-  uint8_t rolling;
+  int8_t boosting;
+  int8_t pitching;
+  int8_t rolling;
 };
 
 /* ship_init - sets the ship to an initial valid state; must be called prior

@@ -18,4 +18,17 @@
 #define SHIP_MIN_SPEED_M_PER_S 0.0
 #define SHIP_MAX_SPEED_M_PER_S 10.0
 
+/*** FOLLOW CAMERA CONFIG *****************************************************/
+
+/* the delay between the follow camera and the ship; the camera is actually
+   following the ship as it was FOLLOW_DELAY_S ago. This creates the lagging
+   effect on the camera that makes visible the ships movement. The larger the
+   delay the 'stronger' the lagging effect. */
+#define FOLLOW_DELAY_S 0.5
+
+/* the number of the ship's past model-world matrices the camera stores. This
+   value must be precomputed and is given by:
+        = (int)(FOLLOW_DELAY_S / TICK_DELTA_S) */
+#define SHIP_MW_HISTORY_SIZE 30
+
 #endif

@@ -322,8 +322,7 @@ run()
             (struct vector4f){0.f, 1.f, 0.f, 0.f});
 
   struct ship_cam cam;
-  cam.target = &nautilus;
-  cam.seperation_m = 10.f;
+  ship_cam_init(&cam, &nautilus, 10.f);
 
   float angle_deg = 0.f;
   float angle_vel_degPs = 10.f;
