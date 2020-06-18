@@ -8,8 +8,8 @@ struct ship_cam
   float seperation_m; /* distance between eye and ship center */
 };
 
-/* should be updated after the ship */
+/* should be ticked after the ship */
 void
-ship_cam_update(struct ship_cam *cam, float delta_s);
+ship_cam_tick(struct ship_cam *cam);
 
 #endif

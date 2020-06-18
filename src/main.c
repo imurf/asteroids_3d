@@ -7,12 +7,10 @@
 #include "util/clock.h"
 #include "ship.h"
 #include "ship_cam.h"
+#include "config.h"
 
 #define SCREEN_WIDTH_PX 1000
 #define SCREEN_HEIGHT_PX 1000
-
-#define MAX_UPDATES_PER_FRAME 5
-#define UPDATE_DELTA_S 0.0166666
 
 static SDL_GLContext glcontext;
 static SDL_Window *window;
@@ -318,7 +316,10 @@ run()
   glEnable(GL_CULL_FACE);
 
   struct ship nautilus;
-  ship_init(&nautilus);
+  ship_init(&nautilus,
+            (struct vector4f){0.f, 0.f, 0.f, 1.f},
+            (struct vector4f){0.f, 0.f, -1.f, 1.f},
+            (struct vector4f){0.f, 1.f, 0.f, 0.f});
 
   struct ship_cam cam;
   cam.target = &nautilus;
@@ -339,10 +340,10 @@ run()
   float cam_roll_deg = 0.f;
   float cam_roll_vel_degPs = 20.f;
 
-  double next_update_s = UPDATE_DELTA_S;
+  double next_tick_s = TICK_DELTA_S;
   bool redraw = true;
   bool is_done = false;
-  int update_count;
+  int tick_count;
   clock_reset(&real_clock);
   while(!is_done)
   {
@@ -361,23 +362,27 @@ run()
         }
         if(event.key.keysym.sym == SDLK_w)
         {
-          nautilus.is_boosting = true;
+          ship_boost(&nautilus, BOOST_FORWARD);
+        }
+        else if(event.key.keysym.sym == SDLK_s)
+        {
+          ship_boost(&nautilus, BOOST_REVERSE);
         }
         else if(event.key.keysym.sym == SDLK_UP)
         {
-          ship_start_pitch(&nautilus, ROTATE_CW);
+          ship_pitch(&nautilus, ROTATE_CCW);
         }
         else if(event.key.keysym.sym == SDLK_DOWN)
         {
-          ship_start_pitch(&nautilus, ROTATE_CCW);
+          ship_pitch(&nautilus, ROTATE_CW);
         }
         else if(event.key.keysym.sym == SDLK_LEFT)
         {
-          ship_start_roll(&nautilus, ROTATE_CCW);
+          ship_roll(&nautilus, ROTATE_CW);
         }
         else if(event.key.keysym.sym == SDLK_RIGHT)
         {
-          ship_start_roll(&nautilus, ROTATE_CW);
+          ship_roll(&nautilus, ROTATE_CCW);
         }
 
         else if(event.key.keysym.sym == SDLK_l)
@@ -415,23 +420,27 @@ run()
         }
         if(event.key.keysym.sym == SDLK_w)
         {
-          nautilus.is_boosting = false;
+          ship_boost(&nautilus, BOOST_NONE);
+        }
+        else if(event.key.keysym.sym == SDLK_w)
+        {
+          ship_boost(&nautilus, BOOST_NONE);
         }
         else if(event.key.keysym.sym == SDLK_UP)
         {
-          ship_stop_pitch(&nautilus, ROTATE_CW);
+          ship_pitch(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_DOWN)
         {
-          ship_stop_pitch(&nautilus, ROTATE_CCW);
+          ship_pitch(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_LEFT)
         {
-          ship_stop_roll(&nautilus, ROTATE_CCW);
+          ship_roll(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_RIGHT)
         {
-          ship_stop_roll(&nautilus, ROTATE_CW);
+          ship_roll(&nautilus, ROTATE_NONE);
         }
 
         else if(event.key.keysym.sym == SDLK_l)
@@ -466,20 +475,20 @@ run()
     }
 
     double time_s = clock_time_s(&real_clock);
-    update_count = 0;
-    while(time_s > next_update_s && update_count < MAX_UPDATES_PER_FRAME)
+    tick_count = 0;
+    while(time_s > next_tick_s && tick_count < MAX_TICKS_PER_FRAME)
     {
-      angle_deg += angle_vel_degPs * UPDATE_DELTA_S;
+      angle_deg += angle_vel_degPs * TICK_DELTA_S;
 
-      ship_update(&nautilus, UPDATE_DELTA_S);
-      ship_cam_update(&cam, UPDATE_DELTA_S);
+      ship_tick(&nautilus);
+      ship_cam_tick(&cam);
 
-      cam_yaw_deg += cam_yaw_vel_degPs * cam_yaw_dir * UPDATE_DELTA_S;
-      cam_pitch_deg += cam_pitch_vel_degPs * cam_pitch_dir * UPDATE_DELTA_S;
-      cam_roll_deg += cam_roll_vel_degPs * cam_roll_dir * UPDATE_DELTA_S;
+      cam_yaw_deg += cam_yaw_vel_degPs * cam_yaw_dir * TICK_DELTA_S;
+      cam_pitch_deg += cam_pitch_vel_degPs * cam_pitch_dir * TICK_DELTA_S;
+      cam_roll_deg += cam_roll_vel_degPs * cam_roll_dir * TICK_DELTA_S;
 
-      next_update_s += UPDATE_DELTA_S;
-      ++update_count;
+      next_tick_s += TICK_DELTA_S;
+      ++tick_count;
       redraw = true;
     }
 
@@ -572,7 +581,7 @@ run()
 
       /* draw ship */
       glPushMatrix();
-      glMultMatrixf(flatten44fm(&nautilus.mw)); 
+      glMultMatrixf(flatten44fm(&nautilus.MW)); 
       //glTranslatef(0.f, 0.f, -50.f);
       //glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
       //glColorPointer(3, GL_FLOAT, 0, ship_colors);

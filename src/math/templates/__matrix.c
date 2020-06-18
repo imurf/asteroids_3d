@@ -18,24 +18,6 @@
 #define M0 (MATRIX_TYPE)0
 #define M1 (MATRIX_TYPE)1
 
-/* note: these are column-major matrices, but in code they look like
- * they are row-major. Remember the format of 2D arrays is:
- *
- * | inner-array-0 | inner-array-1 | inner-array-2 | inner-array-3 |
- *
- * where:
- *  inner-array-n = the nth array of the 2nd dimension of the 2D array.
- *
- * For column major matrices each inner-array is a column, not a row, hence
- * when written in code you should read the arrays as a transposed column-major
- * array.
- *
- *  {{column-0},
- *   {column-1},    i.e. columns go left-to-right not up-to-down
- *   {column-2},
- *   {column-3}}
- */
-
 /**** 4X4 MATRIX *************************************************************/
 
 #if (MATRIX_COLS == 4) && (MATRIX_ROWS == 4)
@@ -84,6 +66,39 @@ FUNCTION_NAME(transpose)(struct MATRIX_NAME *out)
 }
 
 struct MATRIX_NAME *
+FUNCTION_NAME(concatenate)(struct MATRIX_NAME *a,
+                           struct MATRIX_NAME *b,
+                           struct MATRIX_NAME *out)
+{
+  assert(a != NULL && b != NULL && out != NULL);
+  memset((void *)out, M0, sizeof(struct MATRIX_NAME));
+  for(int i = 0; i <= 3; ++i)
+    for(int j = 0; j <= 3; ++j)
+      for(int n = 0; n <= 3; ++n)
+        out->m[i][j] += a->m[n][j] * b->m[i][n];
+}
+
+struct vector4f
+FUNCTION_NAME(multiply)(struct MATRIX_NAME *a, struct vector4f v)
+{
+  assert(a != NULL);
+  return (struct vector4f){
+    (a->m[0][0]*v.x + a->m[1][0]*v.y + a->m[2][0]*v.z + a->m[3][0]*v.w),
+    (a->m[0][1]*v.x + a->m[1][1]*v.y + a->m[2][1]*v.z + a->m[3][1]*v.w),
+    (a->m[0][2]*v.x + a->m[1][2]*v.y + a->m[2][2]*v.z + a->m[3][2]*v.w),
+    (a->m[0][3]*v.x + a->m[1][3]*v.y + a->m[2][3]*v.z + a->m[3][3]*v.w)
+  };
+}
+
+MATRIX_TYPE *
+FUNCTION_NAME(flatten)(struct MATRIX_NAME *a)
+{
+  return &(a->m[0][0]);
+}
+
+/*** 4x4 MATRIX : TRANSFORM CONSTRUCTORS *************************************/
+
+struct MATRIX_NAME *
 FUNCTION_NAME(transformTRS)(MATRIX_TYPE n_x,
                             MATRIX_TYPE n_y,
                             MATRIX_TYPE n_z,
@@ -118,6 +133,7 @@ FUNCTION_NAME(transformTRS)(MATRIX_TYPE n_x,
   return out;
 #undef sf
 }
+
 
 struct MATRIX_NAME *
 FUNCTION_NAME(rotation_x)(MATRIX_TYPE angle_x_deg, struct MATRIX_NAME *out)
@@ -247,34 +263,88 @@ FUNCTION_NAME(scale)(MATRIX_TYPE scale, struct MATRIX_NAME *out)
 }
 
 struct MATRIX_NAME *
-FUNCTION_NAME(concatenate)(struct MATRIX_NAME *a,
-                           struct MATRIX_NAME *b,
-                           struct MATRIX_NAME *out)
+FUNCTION_NAME(modelworld)(struct vector4f unit_x_W,
+                          struct vector4f unit_y_W,
+                          struct vector4f unit_z_W,
+                          struct vector4f position_W,
+                          struct MATRIX_NAME *out)
 {
-  assert(a != NULL && b != NULL && out != NULL);
-  memset((void *)out, M0, sizeof(struct MATRIX_NAME));
-  for(int i = 0; i <= 3; ++i)
-    for(int j = 0; j <= 3; ++j)
-      for(int n = 0; n <= 3; ++n)
-        out->m[i][j] += a->m[n][j] * b->m[i][n];
-}
+#define I unit_x_W
+#define J unit_y_W
+#define K unit_z_W
+#define t position_W
 
-struct vector4f
-FUNCTION_NAME(multiply)(struct MATRIX_NAME *a, struct vector4f v)
-{
-  assert(a != NULL);
-  return (struct vector4f){
-    (a->m[0][0]*v.x + a->m[1][0]*v.y + a->m[2][0]*v.z + a->m[3][0]*v.w),
-    (a->m[0][1]*v.x + a->m[1][1]*v.y + a->m[2][1]*v.z + a->m[3][1]*v.w),
-    (a->m[0][2]*v.x + a->m[1][2]*v.y + a->m[2][2]*v.z + a->m[3][2]*v.w),
-    (a->m[0][3]*v.x + a->m[1][3]*v.y + a->m[2][3]*v.z + a->m[3][3]*v.w)
+  *out = (struct MATRIX_NAME){
+    {{I.x, I.y, I.z, M0},
+     {J.x, J.y, J.z, M0},
+     {K.x, K.y, K.z, M0},
+     {t.x, t.y, t.z, M1}}
   };
+  return out;
+
+#undef I 
+#undef J 
+#undef K 
+#undef t 
 }
 
-MATRIX_TYPE *
-FUNCTION_NAME(flatten)(struct MATRIX_NAME *a)
+struct MATRIX_NAME *
+FUNCTION_NAME(modelworld_scale)(struct vector4f unit_x_W,
+                                struct vector4f unit_y_W,
+                                struct vector4f unit_z_W,
+                                struct vector4f position_W,
+                                float scale,
+                                struct MATRIX_NAME *out)
 {
-  return &(a->m[0][0]);
+  // TODO
+}
+
+struct MATRIX_NAME *
+FUNCTION_NAME(worldview)(struct vector4f unit_x_W,
+                         struct vector4f unit_y_W,
+                         struct vector4f unit_z_W,
+                         struct vector4f position_W,
+                         struct MATRIX_NAME *out)
+{
+  /* this implementation inverts the matrix view-to-world which can be
+   * constructed as in function 'modelworld'. Where 'modelworld' would build 
+   * the matrix:
+   *    (T)(R)
+   * where:
+   *  T = translation matrix, R = rotation matrix
+   *
+   * this function builds the matrix:
+   *    (R^-1)(T^-1)
+   */
+#define I unit_x_W
+#define J unit_y_W
+#define K unit_z_W
+#define t position_W
+
+  float A = (-t.x)*(I.x) + (-t.y)*(I.y) + (-t.z)*(I.z);
+  float B = (-t.x)*(J.x) + (-t.y)*(J.y) + (-t.z)*(J.z);
+  float C = (-t.x)*(K.x) + (-t.y)*(K.y) + (-t.z)*(K.z);
+  *out = (struct MATRIX_NAME){
+    {{I.x, J.x, K.x, M0},
+     {I.y, J.y, K.y, M0},
+     {I.z, J.z, K.z, M0},
+     {A  , B  , C  , M1}}
+  };
+  return out;
+
+#undef I 
+#undef J 
+#undef K 
+#undef t 
+}
+
+struct MATRIX_NAME *
+FUNCTION_NAME(view_look_at)(struct vector4f eye_W,
+                            struct vector4f at_W,
+                            struct vector4f up_W,
+                            struct MATRIX_NAME *out)
+{
+  // TODO
 }
 
 #endif

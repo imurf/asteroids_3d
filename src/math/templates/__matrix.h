@@ -5,6 +5,8 @@
  *
  *****************************************************************************/
 
+#include <stdio.h>
+
 #include "../vector4f.h"
 
 #if (MATRIX_TYPE == float)
@@ -132,6 +134,58 @@ FUNCTION_NAME(identity)(struct MATRIX_NAME *out);
 struct MATRIX_NAME *
 FUNCTION_NAME(transpose)(struct MATRIX_NAME *out);
 
+/* concatenate - performs matrix product a*b (not b*a; matrix products do
+ *   not commute). Result returned via matrix 'out'.
+ *
+ * returns - matrix 'out'.
+ *
+ * errors - asserts(0) if any of a,b,out == NULL.
+ */
+struct MATRIX_NAME *
+FUNCTION_NAME(concatenate)(struct MATRIX_NAME *a,
+                           struct MATRIX_NAME *b,
+                           struct MATRIX_NAME *out);
+
+/* multiple - matrix product of matrix 'a' with column vector 'v'.
+ *
+ * returns - resultant vector.
+ *
+ * errors - asserts(0) if a == NULL.
+ */
+struct vector4f
+FUNCTION_NAME(multiply)(struct MATRIX_NAME *a, struct vector4f v);
+
+/* flatten - 'flattens' the array to a 1D array of matrix elements, in
+ *  column-major memory format, i.e.
+ *
+ * | column0 | column1 | column2 | column3 |
+ *
+ * where column0/1/2/3 are sets of 4 values.
+ */
+MATRIX_TYPE *
+FUNCTION_NAME(flatten)(struct MATRIX_NAME *a);
+
+/* fprint - print a string representation of the matrix to a file stream.
+ */
+static inline void
+FUNCTION_NAME(fprint)(FILE *fstream, 
+                      const char *name, 
+                      struct MATRIX_NAME *a)
+{
+  fprintf(fstream, "%s=\n\
+      \t|%f, %f, %f, %f|\n\
+      \t|%f, %f, %f, %f|\n\
+      \t|%f, %f, %f, %f|\n\
+      \t|%f, %f, %f, %f|\n",
+      name,
+      a->m[0][0], a->m[1][0], a->m[2][0], a->m[3][0],
+      a->m[0][1], a->m[1][1], a->m[2][1], a->m[3][1],
+      a->m[0][2], a->m[1][2], a->m[2][2], a->m[3][2],
+      a->m[0][3], a->m[1][3], a->m[2][3], a->m[3][3]);
+}
+
+/**** 4X4 MATRIX : TRANSFORM CONSTRUCTORS ************************************/
+
 /* TODO: consider removing this function, seems pointless to have a routine
  * that performs a specific order of transformations unless this order is
  * used often and can be optimised. So far not using it.
@@ -249,36 +303,84 @@ FUNCTION_NAME(translation)(MATRIX_TYPE x,
 struct MATRIX_NAME *
 FUNCTION_NAME(scale)(MATRIX_TYPE scale, struct MATRIX_NAME *out);
 
-/* concatenate - performs matrix product a*b (not b*a; matrix products do
- *   not commute). Result returned via matrix 'out'.
+/* modelworld - builds matrix 'out' into a change of basis transformation
+ *   matrix that transforms from a local 'model' space to the root 'world'
+ *   space.
+ *
+ * @unit_x_W - the unit x-axis of the local space in world space coordinates.
+ * @unit_y_W - the unit y-axis of the local space in world space coordinates.
+ * @unit_z_W - the unit z-axis of the local space in world space coordinates.
+ * @position_W - the position vector to the origin of the local space in
+ *             world space coordinates.
  *
  * returns - matrix 'out'.
  *
- * errors - asserts(0) if any of a,b,out == NULL.
+ * errors - asserts(0) if out == NULL.
+ *
+ * note - all unit basis vectors should be of unit length. If they are not
+ *   all geometry in model space will be scaled in the respective axis by the 
+ *   length of the axis' basis vector.
  */
 struct MATRIX_NAME *
-FUNCTION_NAME(concatenate)(struct MATRIX_NAME *a,
-                           struct MATRIX_NAME *b,
-                           struct MATRIX_NAME *out);
+FUNCTION_NAME(modelworld)(struct vector4f unit_x_W,
+                          struct vector4f unit_y_W,
+                          struct vector4f unit_z_W,
+                          struct vector4f position_W,
+                          struct MATRIX_NAME *out);
 
-/* multiple - matrix product of matrix 'a' with column vector 'v'.
+/* modelworld_scale - equivilent to function 'modelworld' except it also 
+ *   adds a uniform scale to the matrix; all model space geometry will be
+ *   scaled by said uniform scale in world space.
  *
- * returns - resultant vector.
- *
- * errors - asserts(0) if a == NULL.
+ * [see doc for 'modelworld' for more details on this function.]
  */
-struct vector4f
-FUNCTION_NAME(multiply)(struct MATRIX_NAME *a, struct vector4f v);
+struct MATRIX_NAME *
+FUNCTION_NAME(modelworld_scale)(struct vector4f unit_x_W,
+                                struct vector4f unit_y_W,
+                                struct vector4f unit_z_W,
+                                struct vector4f position_W,
+                                float scale,
+                                struct MATRIX_NAME *out);
 
-/* flatten - 'flattens' the array to a 1D array of matrix elements, in
- *  column-major memory format, i.e.
+/* worldview - builds matrix 'out' into a change of basis matrix from the
+ *   root 'world' space to the 'view' space of a camera.
  *
- * | column0 | column1 | column2 | column3 |
+ * @unit_x_W - the unit x-axis of the view space in world space coordinates.
+ * @unit_y_W - the unit y-axis of the view space in world space coordinates.
+ * @unit_z_W - the unit z-axis of the view space in world space coordinates.
+ * @position_W - the position vector to the origin of the view space in
+ *             world space coordinates.
  *
- * where column0/1/2/3 are sets of 4 values.
+ * returns - matrix 'out'.
+ *
+ * errors - asserts(0) if out == NULL.
  */
-MATRIX_TYPE *
-FUNCTION_NAME(flatten)(struct MATRIX_NAME *a);
+struct MATRIX_NAME *
+FUNCTION_NAME(worldview)(struct vector4f unit_x_W,
+                         struct vector4f unit_y_W,
+                         struct vector4f unit_z_W,
+                         struct vector4f position_W,
+                         struct MATRIX_NAME *out);
+
+/* view_look_at - build matrix 'out' into a change of basis matrix from the
+ *   root 'world' space to the 'view' space of a camera based on a target
+ *   point in world space the camera is looking at.
+ *
+ * @eye_W - position vector to the eye of the camera (view space origin) in
+ *          world space coordinates.
+ * @at_W - position vector to the point the camera is looking at in world
+ *         space coordinates.
+ * @up_W - the world space up vector.
+ *
+ * returns - matrix 'out'.
+ *
+ * errors - asserts(0) if out == NULL.
+ */
+struct MATRIX_NAME *
+FUNCTION_NAME(view_look_at)(struct vector4f eye_W,
+                            struct vector4f at_W,
+                            struct vector4f up_W,
+                            struct MATRIX_NAME *out);
 
 #endif
 
