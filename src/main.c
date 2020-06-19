@@ -5,8 +5,8 @@
 #include <assert.h>
 #include "util/log.h"
 #include "util/clock.h"
-#include "ship.h"
-#include "ship_cam.h"
+#include "spaceship.h"
+#include "spaceship_camera.h"
 #include "config.h"
 
 #define SCREEN_WIDTH_PX 1000
@@ -54,9 +54,9 @@ static GLubyte cube_indices[] = {
   1, 4, 5
 }; /* size == 36 */
 
-/**** SHIP MODEL *************************************************************/
+/**** spaceship MODEL *************************************************************/
 
-static GLfloat ship_vertices[] = {
+static GLfloat spaceship_vertices[] = {
   -0.5f,  0.0f, -1.0f,
   -1.0f,  0.0f,  1.0f,
    1.0f,  0.0f,  1.0f,
@@ -67,7 +67,7 @@ static GLfloat ship_vertices[] = {
   -0.75f,-0.3f,  0.5f
 }; /* size = 8 */
 
-static GLfloat ship_colors[] = {
+static GLfloat spaceship_colors[] = {
   0.0f, 1.0f, 0.0f,
   1.0f, 1.0f, 0.0f,
   1.0f, 1.0f, 0.0f,
@@ -78,7 +78,7 @@ static GLfloat ship_colors[] = {
   0.0f, 0.0f, 1.0f
 }; /* size = 8 */
 
-static GLubyte ship_indices[] = {
+static GLubyte spaceship_indices[] = {
   0, 4, 1,
   4, 5, 1,
   1, 5, 2,
@@ -93,7 +93,7 @@ static GLubyte ship_indices[] = {
   2, 3, 6
 }; /* size = 36 */
 
-static GLubyte ship_bottom_indices[] = {
+static GLubyte spaceship_bottom_indices[] = {
   0, 7, 1,
   1, 7, 6,
   1, 6, 2,
@@ -102,7 +102,7 @@ static GLubyte ship_bottom_indices[] = {
   2, 6, 3,
 };
 
-static GLubyte ship_top_indices[] = {
+static GLubyte spaceship_top_indices[] = {
   0, 1, 4,
   4, 1, 5,
   1, 2, 5,
@@ -111,7 +111,7 @@ static GLubyte ship_top_indices[] = {
   4, 5, 3
 };
 
-static GLubyte ship_wireframe_indices[] = {
+static GLubyte spaceship_wireframe_indices[] = {
   0, 1,
   1, 2,
   2, 3,
@@ -315,29 +315,29 @@ run()
   glFrontFace(GL_CCW);
   glEnable(GL_CULL_FACE);
 
-  struct ship nautilus;
-  ship_init(&nautilus,
+  struct spaceship nautilus;
+  spaceship_init(&nautilus,
             (struct vector4f){0.f, 0.f, 0.f, 1.f},
             (struct vector4f){0.f, 0.f, -1.f, 1.f},
             (struct vector4f){0.f, 1.f, 0.f, 0.f});
 
-  struct ship_cam cam;
-  ship_cam_init(&cam, &nautilus, 10.f);
+  struct spaceship_camera camera;
+  shipcam_init(&camera, &nautilus);
 
   float angle_deg = 0.f;
   float angle_vel_degPs = 10.f;
 
-  int cam_yaw_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
-  float cam_yaw_deg = 0.f;
-  float cam_yaw_vel_degPs = 20.f;
+  //int camera_yaw_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  //float camera_yaw_deg = 0.f;
+  //float camera_yaw_vel_degPs = 20.f;
 
-  int cam_pitch_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
-  float cam_pitch_deg = 0.f;
-  float cam_pitch_vel_degPs = 20.f;
+  //int camera_pitch_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  //float camera_pitch_deg = 0.f;
+  //float camera_pitch_vel_degPs = 20.f;
 
-  int cam_roll_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
-  float cam_roll_deg = 0.f;
-  float cam_roll_vel_degPs = 20.f;
+  //int camera_roll_dir = 0; /* -1 == -change, 0=no change, +1=positive change */
+  //float camera_roll_deg = 0.f;
+  //float camera_roll_vel_degPs = 20.f;
 
   double next_tick_s = TICK_DELTA_S;
   bool redraw = true;
@@ -361,55 +361,55 @@ run()
         }
         if(event.key.keysym.sym == SDLK_w)
         {
-          ship_boost(&nautilus, BOOST_FORWARD);
+          spaceship_boost(&nautilus, BOOST_FORWARD);
         }
         else if(event.key.keysym.sym == SDLK_s)
         {
-          ship_boost(&nautilus, BOOST_REVERSE);
+          spaceship_boost(&nautilus, BOOST_REVERSE);
         }
         else if(event.key.keysym.sym == SDLK_UP)
         {
-          ship_pitch(&nautilus, ROTATE_CCW);
+          spaceship_pitch(&nautilus, ROTATE_CCW);
         }
         else if(event.key.keysym.sym == SDLK_DOWN)
         {
-          ship_pitch(&nautilus, ROTATE_CW);
+          spaceship_pitch(&nautilus, ROTATE_CW);
         }
         else if(event.key.keysym.sym == SDLK_LEFT)
         {
-          ship_roll(&nautilus, ROTATE_CW);
+          spaceship_roll(&nautilus, ROTATE_CW);
         }
         else if(event.key.keysym.sym == SDLK_RIGHT)
         {
-          ship_roll(&nautilus, ROTATE_CCW);
+          spaceship_roll(&nautilus, ROTATE_CCW);
         }
 
-        else if(event.key.keysym.sym == SDLK_l)
-        {
-          cam_yaw_dir = 1; 
-        }
-        else if(event.key.keysym.sym == SDLK_j)
-        {
-          cam_yaw_dir = -1; 
-        }
+        //else if(event.key.keysym.sym == SDLK_l)
+        //{
+        //  camera_yaw_dir = 1; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_j)
+        //{
+        //  camera_yaw_dir = -1; 
+        //}
 
-        else if(event.key.keysym.sym == SDLK_i)
-        {
-          cam_pitch_dir = 1; 
-        }
-        else if(event.key.keysym.sym == SDLK_k)
-        {
-          cam_pitch_dir = -1; 
-        }
+        //else if(event.key.keysym.sym == SDLK_i)
+        //{
+        //  camera_pitch_dir = 1; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_k)
+        //{
+        //  camera_pitch_dir = -1; 
+        //}
 
-        else if(event.key.keysym.sym == SDLK_o)
-        {
-          cam_roll_dir = 1; 
-        }
-        else if(event.key.keysym.sym == SDLK_u)
-        {
-          cam_roll_dir = -1; 
-        }
+        //else if(event.key.keysym.sym == SDLK_o)
+        //{
+        //  camera_roll_dir = 1; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_u)
+        //{
+        //  camera_roll_dir = -1; 
+        //}
 
         break;
       case SDL_KEYUP:
@@ -419,55 +419,55 @@ run()
         }
         if(event.key.keysym.sym == SDLK_w)
         {
-          ship_boost(&nautilus, BOOST_NONE);
+          spaceship_boost(&nautilus, BOOST_NONE);
         }
         else if(event.key.keysym.sym == SDLK_w)
         {
-          ship_boost(&nautilus, BOOST_NONE);
+          spaceship_boost(&nautilus, BOOST_NONE);
         }
         else if(event.key.keysym.sym == SDLK_UP)
         {
-          ship_pitch(&nautilus, ROTATE_NONE);
+          spaceship_pitch(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_DOWN)
         {
-          ship_pitch(&nautilus, ROTATE_NONE);
+          spaceship_pitch(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_LEFT)
         {
-          ship_roll(&nautilus, ROTATE_NONE);
+          spaceship_roll(&nautilus, ROTATE_NONE);
         }
         else if(event.key.keysym.sym == SDLK_RIGHT)
         {
-          ship_roll(&nautilus, ROTATE_NONE);
+          spaceship_roll(&nautilus, ROTATE_NONE);
         }
 
-        else if(event.key.keysym.sym == SDLK_l)
-        {
-          cam_yaw_dir = 0; 
-        }
-        else if(event.key.keysym.sym == SDLK_j)
-        {
-          cam_yaw_dir = 0; 
-        }
+        //else if(event.key.keysym.sym == SDLK_l)
+        //{
+        //  camera_yaw_dir = 0; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_j)
+        //{
+        //  camera_yaw_dir = 0; 
+        //}
 
-        else if(event.key.keysym.sym == SDLK_i)
-        {
-          cam_pitch_dir = 0; 
-        }
-        else if(event.key.keysym.sym == SDLK_k)
-        {
-          cam_pitch_dir = 0; 
-        }
+        //else if(event.key.keysym.sym == SDLK_i)
+        //{
+        //  camera_pitch_dir = 0; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_k)
+        //{
+        //  camera_pitch_dir = 0; 
+        //}
 
-        else if(event.key.keysym.sym == SDLK_o)
-        {
-          cam_roll_dir = 0; 
-        }
-        else if(event.key.keysym.sym == SDLK_u)
-        {
-          cam_roll_dir = 0; 
-        }
+        //else if(event.key.keysym.sym == SDLK_o)
+        //{
+        //  camera_roll_dir = 0; 
+        //}
+        //else if(event.key.keysym.sym == SDLK_u)
+        //{
+        //  camera_roll_dir = 0; 
+        //}
 
         break;
       }
@@ -479,12 +479,12 @@ run()
     {
       angle_deg += angle_vel_degPs * TICK_DELTA_S;
 
-      ship_tick(&nautilus);
-      ship_cam_tick(&cam);
+      spaceship_tick(&nautilus);
+      shipcam_tick(&camera);
 
-      cam_yaw_deg += cam_yaw_vel_degPs * cam_yaw_dir * TICK_DELTA_S;
-      cam_pitch_deg += cam_pitch_vel_degPs * cam_pitch_dir * TICK_DELTA_S;
-      cam_roll_deg += cam_roll_vel_degPs * cam_roll_dir * TICK_DELTA_S;
+      //camera_yaw_deg += cam_yaw_vel_degPs * cam_yaw_dir * TICK_DELTA_S;
+      //camera_pitch_deg += cam_pitch_vel_degPs * cam_pitch_dir * TICK_DELTA_S;
+      //camera_roll_deg += cam_roll_vel_degPs * cam_roll_dir * TICK_DELTA_S;
 
       next_tick_s += TICK_DELTA_S;
       ++tick_count;
@@ -495,7 +495,7 @@ run()
     {
       glClear(GL_COLOR_BUFFER_BIT);
 
-      /* set camera position - i.e. view matrix */
+      /* set cameraera position - i.e. view matrix */
       //glMatrixMode(GL_MODELVIEW);
       //glLoadIdentity();
       //glTranslatef(0.0f, 5.0f, -20.0f);
@@ -506,14 +506,14 @@ run()
       // the model appears to be inverted if I use my own view matrix, if
       // using the opengl matrix math to build the view it is not inverted.
       //
-      // it is both the winding order and the ship direction that is inverted,
-      // it is asthough the ship is scaled by -1.0 on the z-axis.
+      // it is both the winding order and the spaceship direction that is inverted,
+      // it is asthough the spaceship is scaled by -1.0 on the z-axis.
       //
-      // With my view the ship points down -z but the winding order is inside
-      // out, with opengl view the ship points up +z and the winding order is
+      // With my view the spaceship points down -z but the winding order is inside
+      // out, with opengl view the spaceship points up +z and the winding order is
       // correct.
       //
-      // NOPE! i was wrong, in both cases the ship points up +z, but with my
+      // NOPE! i was wrong, in both cases the spaceship points up +z, but with my
       // view the winding order is inside out.
       //
       // NOPE! wrong again, they are actually the same. IT IS VERY HARD TO TELL!
@@ -525,11 +525,11 @@ run()
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
       //glTranslatef(0.0f, 0.0f, -10.0f);
-      //glRotatef(cam_yaw_deg, 0.0f, 1.0f, 0.0f);
-      //glRotatef(cam_pitch_deg, 1.0f, 0.0f, 0.0f);
-      //glRotatef(cam_roll_deg, 0.0f, 0.0f, 1.0f);
+      //glRotatef(camera_yaw_deg, 0.0f, 1.0f, 0.0f);
+      //glRotatef(camera_pitch_deg, 1.0f, 0.0f, 0.0f);
+      //glRotatef(camera_roll_deg, 0.0f, 0.0f, 1.0f);
       //glRotatef(70.f, 0.0f, 1.0f, 0.0f);
-      glLoadMatrixf(flatten44fm(&cam.view));
+      glLoadMatrixf(flatten44fm(&camera.wv));
 
       //glEnableClientState(GL_COLOR_ARRAY);
       
@@ -578,26 +578,26 @@ run()
       //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, cube_indices);
       //glPopMatrix();
 
-      /* draw ship */
+      /* draw spaceship */
       glPushMatrix();
-      glMultMatrixf(flatten44fm(&nautilus.MW)); 
+      glMultMatrixf(flatten44fm(&nautilus.mw)); 
       //glTranslatef(0.f, 0.f, -50.f);
-      //glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
-      //glColorPointer(3, GL_FLOAT, 0, ship_colors);
-      //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, ship_indices);
-      glVertexPointer(3, GL_FLOAT, 0, ship_vertices);
+      //glVertexPointer(3, GL_FLOAT, 0, spaceship_vertices);
+      //glColorPointer(3, GL_FLOAT, 0, spaceship_colors);
+      //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, spaceship_indices);
+      glVertexPointer(3, GL_FLOAT, 0, spaceship_vertices);
       glDisableClientState(GL_COLOR_ARRAY);
       glPolygonMode(GL_FRONT, GL_FILL);
       glColor3f(1.f, 0.f, 0.5f);
-      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_top_indices);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, spaceship_top_indices);
       glColor3f(0.f, 1.f, 1.f);
-      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_bottom_indices);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, spaceship_bottom_indices);
       glPolygonMode(GL_FRONT, GL_LINE);
       glColor3f(1.f, 1.f, 1.0f);
-      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_top_indices);
-      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, ship_bottom_indices);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, spaceship_top_indices);
+      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_BYTE, spaceship_bottom_indices);
       //glColor3f(1.f, 1.f, 1.f);
-      //glDrawElements(GL_LINES, 28, GL_UNSIGNED_BYTE, ship_wireframe_indices);
+      //glDrawElements(GL_LINES, 28, GL_UNSIGNED_BYTE, spaceship_wireframe_indices);
       glPopMatrix();
 
       SDL_GL_SwapWindow(window);
