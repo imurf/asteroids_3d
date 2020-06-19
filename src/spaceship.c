@@ -77,6 +77,7 @@ spaceship_init(struct spaceship *sh,
   memset((void *)sh, 0, sizeof(struct spaceship));
 
   sh->vpos_w_m = pos_w_m;
+  sh->pos_w_m_p_s = SHIP_MIN_POS_M_P_S;
 
   sh->front = sub4fv(pos_w_m, at_w_m);
   sh->front = normalise4fv(sh->front);

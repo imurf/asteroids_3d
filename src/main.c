@@ -9,8 +9,8 @@
 #include "spaceship_camera.h"
 #include "config.h"
 
-#define SCREEN_WIDTH_PX 1000
-#define SCREEN_HEIGHT_PX 1000
+#define SCREEN_WIDTH_PX 1500
+#define SCREEN_HEIGHT_PX 800
 
 static SDL_GLContext glcontext;
 static SDL_Window *window;
@@ -192,13 +192,7 @@ static GLfloat xzgrid[1212];
  * axes. If nx or nz is even, they are made odd by subtracting 1.
  */
 void
-generate_xz_grid(GLfloat *vertex_array, 
-                 float ox, 
-                 float oy, 
-                 float oz, 
-                 float d_m, 
-                 int nx, 
-                 int nz)
+generate_xz_grid(GLfloat *vertex_array, float d_m, int nx, int nz)
 {
   assert(vertex_array != NULL);
 
@@ -213,27 +207,27 @@ generate_xz_grid(GLfloat *vertex_array,
   nhz = (nz - 1) / 2;
 
   /* generate the lines perpendicular to the x-axis */
-  for(int i = -nhx; i < nhx; ++i)
+  for(int i = -nhx; i <= nhx; ++i)
   {
-    vertex_array[v++] = ox + (d_m * i);
-    vertex_array[v++] = oy + 0.f;
-    vertex_array[v++] = oz + (-nhz);
+    vertex_array[v++] = (d_m * i);
+    vertex_array[v++] = 0.f;
+    vertex_array[v++] = (-nhz) * d_m;
 
-    vertex_array[v++] = ox + (d_m * i);
-    vertex_array[v++] = oy + 0.f;
-    vertex_array[v++] = oz + nhz;
+    vertex_array[v++] = (d_m * i);
+    vertex_array[v++] = 0.f;
+    vertex_array[v++] = nhz * d_m;
   }
 
   /* generate the lines perpendicular to the z-axis */
-  for(int i = -nhz; i < nhz; ++i)
+  for(int i = -nhz; i <= nhz; ++i)
   {
-    vertex_array[v++] = ox + (-nhx);
-    vertex_array[v++] = oy + 0.f;
-    vertex_array[v++] = oz + d_m * i;
+    vertex_array[v++] = (-nhx) * d_m;
+    vertex_array[v++] = 0.f;
+    vertex_array[v++] = d_m * i;
 
-    vertex_array[v++] = ox + nhx;
-    vertex_array[v++] = oy + 0.f;
-    vertex_array[v++] = oz + (d_m * i);
+    vertex_array[v++] = nhx * d_m;
+    vertex_array[v++] = 0.f;
+    vertex_array[v++] = (d_m * i);
   }
 }
 
@@ -283,7 +277,7 @@ init()
   }
 
   gluPerspective(60.0f, 
-                 SCREEN_WIDTH_PX / SCREEN_HEIGHT_PX,
+                 (double)SCREEN_WIDTH_PX / (double)SCREEN_HEIGHT_PX,
                  1.0f,
                  1024.0f);
 
@@ -307,7 +301,7 @@ run()
             clock_resolution_ns(&real_clock));
 
 
-  generate_xz_grid(xzgrid, 0.f, 0.f, 0.f, 1.f, xz_grid_lines, xz_grid_lines);
+  generate_xz_grid(xzgrid, 10.f, xz_grid_lines, xz_grid_lines);
 
   glEnableClientState(GL_VERTEX_ARRAY);
       
@@ -367,19 +361,19 @@ run()
         {
           spaceship_boost(&nautilus, BOOST_REVERSE);
         }
-        else if(event.key.keysym.sym == SDLK_UP)
+        else if(event.key.keysym.sym == SDLK_i)
         {
           spaceship_pitch(&nautilus, ROTATE_CCW);
         }
-        else if(event.key.keysym.sym == SDLK_DOWN)
+        else if(event.key.keysym.sym == SDLK_k)
         {
           spaceship_pitch(&nautilus, ROTATE_CW);
         }
-        else if(event.key.keysym.sym == SDLK_LEFT)
+        else if(event.key.keysym.sym == SDLK_j)
         {
           spaceship_roll(&nautilus, ROTATE_CW);
         }
-        else if(event.key.keysym.sym == SDLK_RIGHT)
+        else if(event.key.keysym.sym == SDLK_l)
         {
           spaceship_roll(&nautilus, ROTATE_CCW);
         }
@@ -421,23 +415,23 @@ run()
         {
           spaceship_boost(&nautilus, BOOST_NONE);
         }
-        else if(event.key.keysym.sym == SDLK_w)
+        else if(event.key.keysym.sym == SDLK_s)
         {
           spaceship_boost(&nautilus, BOOST_NONE);
         }
-        else if(event.key.keysym.sym == SDLK_UP)
+        else if(event.key.keysym.sym == SDLK_i)
         {
           spaceship_pitch(&nautilus, ROTATE_NONE);
         }
-        else if(event.key.keysym.sym == SDLK_DOWN)
+        else if(event.key.keysym.sym == SDLK_k)
         {
           spaceship_pitch(&nautilus, ROTATE_NONE);
         }
-        else if(event.key.keysym.sym == SDLK_LEFT)
+        else if(event.key.keysym.sym == SDLK_j)
         {
           spaceship_roll(&nautilus, ROTATE_NONE);
         }
-        else if(event.key.keysym.sym == SDLK_RIGHT)
+        else if(event.key.keysym.sym == SDLK_l)
         {
           spaceship_roll(&nautilus, ROTATE_NONE);
         }
@@ -469,6 +463,18 @@ run()
         //  camera_roll_dir = 0; 
         //}
 
+        break;
+      case SDL_WINDOWEVENT:
+        switch(event.window.event)
+        {
+        case SDL_WINDOWEVENT_RESIZED:
+          gluPerspective(60.0f, 
+                         (double)event.window.data1 / (double)event.window.data2,
+                         1.0f,
+                         1024.0f);
+          glViewport(0, 0, (double)event.window.data1, (double)event.window.data2);
+          break;
+        }
         break;
       }
     }
@@ -539,26 +545,26 @@ run()
       glVertexPointer(3, GL_FLOAT, 0, xzgrid);
       glColor3f(0.5f, 0.5f, 0.5f);
       glPushMatrix();
-      glTranslatef(0.0f, -50.f, 0.f);
+      glTranslatef(0.0f, -505.f, 0.f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
       glPopMatrix();
 
       /* top grid */
       glPushMatrix();
-      glTranslatef(0.0f, 50.f, 0.f);
+      glTranslatef(0.0f, 505.f, 0.f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
       glPopMatrix();
 
       /* back grid (+)z */
       glPushMatrix();
-      glTranslatef(0.f, 0.f, 50.f);
+      glTranslatef(0.f, 0.f, 505.f);
       glRotatef(90.f, 1.0f, 0.0f, 0.0f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
       glPopMatrix();
 
       /* front grid (-)z */
       glPushMatrix();
-      glTranslatef(0.f, 0.f, -50.f);
+      glTranslatef(0.f, 0.f, -505.f);
       glRotatef(90.f, 1.0f, 0.0f, 0.0f);
       glDrawArrays(GL_LINES, 0, xz_grid_vertex_count);
       glPopMatrix();
